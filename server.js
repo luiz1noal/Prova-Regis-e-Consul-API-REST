@@ -8,10 +8,15 @@ app.use(express.json())
 let idAtual = 1
 let logs = []
 
+let usuarios = [
+    { id: 1, nome: 'João' },
+    { id: 2, nome: 'Maria' }
+];
+
 app.post('/logs', async (req, res) => {
-    const {id, nome} = req.body
+    const { id, nome } = req.body
     const data = new Date().toLocaleDateString('pt-BR')
-    const newLog = {id: idAtual++, nome, data}
+    const newLog = { id: idAtual++, nome, data }
     logs.push(newLog)
 
     await fs.appendFile('logs.txt', `${JSON.stringify(newLog)}\n`);
@@ -20,12 +25,26 @@ app.post('/logs', async (req, res) => {
 })
 
 app.get('/usuarios', (req, res) => {
-    const usuarios = [
-        { id: 1, nome: 'João' },
-        { id: 2, nome: 'Maria' }
-    ];
-    
     res.json(usuarios);
+})
+
+app.get('/usuarios/:id', (req, res) => {
+    const usuario = usuarios.find(u => u.id == req.params.id);
+    if (!usuario) {
+        return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+    res.json(usuario);
+})
+
+app.put('/usuarios/:id', (req, res) => {
+    const usuario = usuarios.find(u => u.id == req.params.id);
+    if (!usuario) {
+        return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+    const { nome } = req.body;
+    usuario.nome = nome;
+
+    res.json(usuario);
 })
 
 app.listen(PORT, () => {
