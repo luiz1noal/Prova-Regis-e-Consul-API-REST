@@ -8,49 +8,64 @@ app.use(express.json())
 let idAtual = 1
 let logs = []
 
-let usuarios = [
-    { id: 1, nome: 'João' },
-    { id: 2, nome: 'Maria' }
-];
+async function carregarLogs() {
+    try {
+        const data = await fs.readFile('logs.txt', 'utf-8')
+        logs = data.split('\n').filter(line => line).map(line => JSON.parse(line))
+        if (logs.length > 0) {
+            idAtual = Math.max(...logs.map(log => log.id)) + 1
+        }
+    } catch (err) {
+        logs = []
+    }
+}
+
+async function salvarLogs() {
+    const data = logs.map(log => JSON.stringify(log)).join('\n')
+    await fs.writeFile('logs.txt', data)
+}
+
+carregarLogs()
 
 app.post('/logs', async (req, res) => {
-    const { id, nome } = req.body
+    const { nome } = req.body
     const data = new Date().toLocaleDateString('pt-BR')
     const newLog = { id: idAtual++, nome, data }
     logs.push(newLog)
 
-    await fs.appendFile('logs.txt', `${JSON.stringify(newLog)}\n`);
+    await salvarLogs()
 
     res.status(201).json(newLog)
 })
 
 app.get('/usuarios', (req, res) => {
-    res.json(usuarios);
+    res.json(logs)
 })
 
 app.get('/usuarios/:id', (req, res) => {
-    const usuario = usuarios.find(u => u.id == req.params.id);
+    const usuario = logs.find(u => u.id == req.params.id)
     if (!usuario) {
-        return res.status(404).json({ message: 'Usuário não encontrado' });
+        return res.status(404).json({ message: 'Usuário não encontrado' })
     }
-    res.json(usuario);
+    res.json(usuario)
 })
 
-app.put('/usuarios/:id', (req, res) => {
-    const usuario = usuarios.find(u => u.id == req.params.id);
+app.put('/usuarios/:id', async (req, res) => {
+    const usuario = logs.find(u => u.id == req.params.id)
     if (!usuario) {
-        return res.status(404).json({ message: 'Usuário não encontrado' });
+        return res.status(404).json({ message: 'Usuário não encontrado' })
     }
-    const { nome } = req.body;
-    usuario.nome = nome;
+    const { nome } = req.body
+    usuario.nome = nome
 
-    res.json(usuario);
+    await salvarLogs()
+
+    res.json(usuario)
 })
 
 app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`Servidor rodando na porta ${PORT}`)
 })
-
 
 
 /*
